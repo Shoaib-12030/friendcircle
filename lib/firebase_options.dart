@@ -54,7 +54,7 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'YOUR_ANDROID_API_KEY_HERE',
+    apiKey: 'AIzaSyC_PLACEHOLDER_YOUR_ANDROID_API_KEY_HERE',
     appId: '1:162211746751:android:b8cd16fccce927be65470a',
     messagingSenderId: '162211746751',
     projectId: 'friendcircle-3e3ee',

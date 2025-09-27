@@ -8,8 +8,8 @@ class SocketService {
   // Socket Events
   static const String messageReceived = 'message_received';
   static const String messageSent = 'send_message';
-  static const String joinGroup = 'join_group';
-  static const String leaveGroup = 'leave_group';
+  static const String joinGroupEvent = 'join_group';
+  static const String leaveGroupEvent = 'leave_group';
   static const String typingUpdate = 'typing_update';
   static const String userOnline = 'user_online';
   static const String userOffline = 'user_offline';
@@ -54,14 +54,14 @@ class SocketService {
 
   // Group Chat Operations
   Future<void> joinGroup(String groupId) async {
-    _socket?.emit(joinGroup, {
+    _socket?.emit(joinGroupEvent, {
       'groupId': groupId,
       'userId': _currentUserId,
     });
   }
 
   Future<void> leaveGroup(String groupId) async {
-    _socket?.emit(leaveGroup, {
+    _socket?.emit(leaveGroupEvent, {
       'groupId': groupId,
       'userId': _currentUserId,
     });
@@ -96,8 +96,12 @@ class SocketService {
 
   // User Status
   void onUserStatusUpdate(Function(Map<String, dynamic>) callback) {
-    _socket?.on(userOnline, callback);
-    _socket?.on(userOffline, callback);
+    _socket?.on(userOnline, (data) {
+      callback(Map<String, dynamic>.from(data));
+    });
+    _socket?.on(userOffline, (data) {
+      callback(Map<String, dynamic>.from(data));
+    });
   }
 
   // Connection Status

@@ -122,11 +122,11 @@ class AppTheme {
     ),
     
     // Card Theme
-    cardTheme: CardTheme(
+    cardTheme: const CardThemeData(
       color: cardColor,
       elevation: 2,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.all(Radius.circular(16)),
       ),
     ),
     
