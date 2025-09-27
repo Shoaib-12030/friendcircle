@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Friend Circle 🎉
 
 An all-in-one private app for your group with registration, group creation, events, expenses, chat, and more.
