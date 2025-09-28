@@ -1,11 +1,11 @@
 {
-    "name": "friend_circle",
-    "short_name": "friend_circle",
+    "name": "FriendCircle",
+    "short_name": "FriendCircle",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#6C63FF",
+    "theme_color": "#6C63FF",
+    "description": "Social networking app for managing friend circles, events, and expenses",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
