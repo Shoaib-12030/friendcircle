@@ -49,23 +49,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<void> _signInWithGoogle() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final success = await authProvider.signInWithGoogle();
-
-    if (success) {
-      Get.offAllNamed(AppRoutes.main);
-    } else {
-      Get.snackbar(
-        'Login Failed',
-        authProvider.errorMessage ?? 'Failed to sign in with Google',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -78,7 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 60),
-                
+
                 // Logo and Title
                 Column(
                   children: [
@@ -116,9 +99,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 40),
-                
+
                 // Email Field
                 CustomTextField(
                   controller: _emailController,
@@ -136,9 +119,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     return null;
                   },
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Password Field
                 CustomTextField(
                   controller: _passwordController,
@@ -153,7 +136,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       });
                     },
                     icon: Icon(
-                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      _obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
                     ),
                   ),
                   validator: (value) {
@@ -166,62 +151,23 @@ class _LoginScreenState extends State<LoginScreen> {
                     return null;
                   },
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Sign In Button
                 Consumer<AuthProvider>(
                   builder: (context, authProvider, _) {
                     return CustomButton(
                       text: 'Sign In',
-                      onPressed: authProvider.isLoading ? null : _signInWithEmail,
+                      onPressed:
+                          authProvider.isLoading ? null : _signInWithEmail,
                       isLoading: authProvider.isLoading,
                     );
                   },
                 ),
-                
-                const SizedBox(height: 20),
-                
-                // Divider
-                const Row(
-                  children: [
-                    Expanded(child: Divider()),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'OR',
-                        style: TextStyle(
-                          color: Color(0xFF666666),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                    Expanded(child: Divider()),
-                  ],
-                ),
-                
-                const SizedBox(height: 20),
-                
-                // Google Sign In
-                CustomButton(
-                  text: 'Continue with Google',
-                  onPressed: _signInWithGoogle,
-                  isOutlined: true,
-                  icon: Icons.login,
-                ),
-                
-                const SizedBox(height: 12),
-                
-                // Phone Sign In
-                CustomButton(
-                  text: 'Continue with Phone',
-                  onPressed: () => Get.toNamed(AppRoutes.phoneAuth),
-                  isOutlined: true,
-                  icon: Icons.phone,
-                ),
-                
+
                 const SizedBox(height: 30),
-                
+
                 // Sign Up Link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -241,9 +187,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 12),
-                
+
                 // Forgot Password Link
                 Center(
                   child: TextButton(
@@ -258,7 +204,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 20),
               ],
             ),

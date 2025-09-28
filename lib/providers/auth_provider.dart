@@ -2,14 +2,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:firebase_core/firebase_core.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
 import '../services/database_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final firebase_auth.FirebaseAuth _auth = firebase_auth.FirebaseAuth.instance;
-  GoogleSignIn? _googleSignIn;
+
   final DatabaseService _dbService = DatabaseService();
 
   User? _currentUser;
@@ -22,26 +22,7 @@ class AuthProvider extends ChangeNotifier {
   bool get isAuthenticated => _currentUser != null;
 
   AuthProvider() {
-    _initGoogleSignIn();
     _init();
-  }
-
-  void _initGoogleSignIn() {
-    try {
-      // Only initialize Google Sign In if not on web or if properly configured
-      if (!kIsWeb) {
-        _googleSignIn = GoogleSignIn();
-      } else {
-        // For web, we need proper configuration
-        // This prevents the debug breakpoint you're experiencing
-        debugPrint(
-            'Google Sign In on web requires proper client ID configuration');
-        _googleSignIn = null;
-      }
-    } catch (e) {
-      debugPrint('Google Sign In initialization failed: $e');
-      _googleSignIn = null;
-    }
   }
 
   Future<void> _init() async {
@@ -279,99 +260,8 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> signInWithGoogle() async {
-    try {
-      _isLoading = true;
-      _errorMessage = null;
-      notifyListeners();
-
-      if (_googleSignIn == null) {
-        _errorMessage = 'Google Sign In not available on this platform';
-        return false;
-      }
-
-      final GoogleSignInAccount? googleUser = await _googleSignIn!.signIn();
-      if (googleUser == null) {
-        return false; // User cancelled sign-in
-      }
-
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-      final credential = firebase_auth.GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      final userCredential = await _auth.signInWithCredential(credential);
-
-      if (userCredential.user != null) {
-        // Check if user exists, if not create new user
-        final doc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(userCredential.user!.uid)
-            .get();
-
-        if (!doc.exists) {
-          final user = User(
-            id: userCredential.user!.uid,
-            email: userCredential.user!.email ?? '',
-            name: userCredential.user!.displayName ?? '',
-            nickname: userCredential.user!.displayName ?? '',
-            photoUrl: userCredential.user!.photoURL,
-            createdAt: DateTime.now(),
-            lastSeen: DateTime.now(),
-          );
-          await _dbService.createUser(user);
-          _currentUser = user;
-        } else {
-          await _loadUserData(userCredential.user!.uid);
-        }
-        return true;
-      }
-      return false;
-    } catch (e) {
-      _errorMessage = 'Failed to sign in with Google';
-      return false;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  Future<bool> signInWithPhoneNumber(
-      String phoneNumber, String verificationCode) async {
-    try {
-      _isLoading = true;
-      _errorMessage = null;
-      notifyListeners();
-
-      final credential = firebase_auth.PhoneAuthProvider.credential(
-        verificationId:
-            phoneNumber, // This should be the verification ID from phone auth
-        smsCode: verificationCode,
-      );
-
-      final userCredential = await _auth.signInWithCredential(credential);
-
-      if (userCredential.user != null) {
-        await _loadUserData(userCredential.user!.uid);
-        return true;
-      }
-      return false;
-    } catch (e) {
-      _errorMessage = 'Failed to verify phone number';
-      return false;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
   Future<void> signOut() async {
     try {
-      if (_googleSignIn != null) {
-        await _googleSignIn!.signOut();
-      }
       await _auth.signOut();
       _currentUser = null;
       _errorMessage = null;

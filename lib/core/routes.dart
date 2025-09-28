@@ -3,7 +3,7 @@ import '../screens/auth/login_screen.dart';
 import '../screens/register_screen.dart';
 import '../screens/email_verification_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
-import '../screens/auth/phone_auth_screen.dart';
+
 import '../screens/home/main_screen.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/friends/friends_screen.dart';
@@ -18,7 +18,7 @@ class AppRoutes {
   static const String register = '/register';
   static const String emailVerification = '/email-verification';
   static const String forgotPassword = '/forgot-password';
-  static const String phoneAuth = '/phone-auth';
+
   static const String main = '/main';
   static const String profile = '/profile';
   static const String editProfile = '/edit-profile';
@@ -44,7 +44,6 @@ class AppRoutes {
     GetPage(
         name: emailVerification, page: () => const EmailVerificationScreen()),
     GetPage(name: forgotPassword, page: () => const ForgotPasswordScreen()),
-    GetPage(name: phoneAuth, page: () => const PhoneAuthScreen()),
     GetPage(name: main, page: () => const MainScreen()),
     GetPage(name: profile, page: () => const ProfileScreen()),
     GetPage(name: editProfile, page: () => const EditProfileScreen()),

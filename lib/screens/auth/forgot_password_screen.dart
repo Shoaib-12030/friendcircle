@@ -15,7 +15,7 @@ class ForgotPasswordScreen extends StatefulWidget {
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
-  
+
   Timer? _timer;
   int _remainingTime = 120; // 2 minutes in seconds
   bool _isCodeSent = false;
@@ -35,8 +35,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           .hasMatch(_emailController.text);
     });
   }
-
-
 
   void _startTimer() {
     setState(() {
@@ -58,12 +56,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     if (!_formKey.currentState!.validate() || !_isEmailValid) return;
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final success = await authProvider.sendPasswordResetEmail(_emailController.text.trim());
+    final success =
+        await authProvider.sendPasswordResetEmail(_emailController.text.trim());
 
     if (success) {
       setState(() => _isCodeSent = true);
       _startTimer();
-      
+
       Get.snackbar(
         'Reset Code Sent',
         'A password reset link has been sent to ${_emailController.text}. Please check your email and follow the instructions.',
@@ -201,7 +200,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       SizedBox(
                         height: 56,
                         child: ElevatedButton(
-                          onPressed: authProvider.isLoading ? null : _sendResetCode,
+                          onPressed:
+                              authProvider.isLoading ? null : _sendResetCode,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppTheme.primaryColor,
                             shape: RoundedRectangleBorder(
@@ -209,7 +209,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             ),
                           ),
                           child: authProvider.isLoading
-                              ? const CircularProgressIndicator(color: Colors.white)
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white)
                               : const Text(
                                   'Send Reset Link',
                                   style: TextStyle(
@@ -225,12 +226,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: _remainingTime > 0 
+                          color: _remainingTime > 0
                               ? Colors.orange.withOpacity(0.1)
                               : Colors.green.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: _remainingTime > 0 
+                            color: _remainingTime > 0
                                 ? Colors.orange.withOpacity(0.3)
                                 : Colors.green.withOpacity(0.3),
                           ),
@@ -239,8 +240,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
-                              _remainingTime > 0 ? Icons.timer : Icons.check_circle,
-                              color: _remainingTime > 0 ? Colors.orange : Colors.green,
+                              _remainingTime > 0
+                                  ? Icons.timer
+                                  : Icons.check_circle,
+                              color: _remainingTime > 0
+                                  ? Colors.orange
+                                  : Colors.green,
                             ),
                             const SizedBox(width: 8),
                             Text(
@@ -250,7 +255,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
-                                color: _remainingTime > 0 ? Colors.orange[700] : Colors.green[700],
+                                color: _remainingTime > 0
+                                    ? Colors.orange[700]
+                                    : Colors.green[700],
                               ),
                             ),
                           ],
@@ -265,8 +272,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           onPressed: _canResendCode ? _resendCode : null,
                           style: OutlinedButton.styleFrom(
                             side: BorderSide(
-                              color: _canResendCode 
-                                  ? AppTheme.primaryColor 
+                              color: _canResendCode
+                                  ? AppTheme.primaryColor
                                   : Colors.grey,
                             ),
                             shape: RoundedRectangleBorder(
@@ -280,8 +287,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
-                              color: _canResendCode 
-                                  ? AppTheme.primaryColor 
+                              color: _canResendCode
+                                  ? AppTheme.primaryColor
                                   : Colors.grey,
                             ),
                           ),
@@ -295,7 +302,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         decoration: BoxDecoration(
                           color: Colors.blue.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                          border:
+                              Border.all(color: Colors.blue.withOpacity(0.3)),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
