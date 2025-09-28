@@ -52,7 +52,7 @@ class DatabaseService {
     final nameQuery = await _firestore
         .collection('users')
         .where('name', isGreaterThanOrEqualTo: query)
-        .where('name', isLessThan: query + 'z')
+        .where('name', isLessThan: '${query}z')
         .limit(20)
         .get();
     
@@ -62,7 +62,7 @@ class DatabaseService {
     final nicknameQuery = await _firestore
         .collection('users')
         .where('nickname', isGreaterThanOrEqualTo: query)
-        .where('nickname', isLessThan: query + 'z')
+        .where('nickname', isLessThan: '${query}z')
         .limit(20)
         .get();
     

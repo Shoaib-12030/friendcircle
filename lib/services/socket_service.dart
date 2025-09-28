@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import '../models/message_model.dart';
 
@@ -29,18 +30,18 @@ class SocketService {
     _socket!.connect();
     
     _socket!.onConnect((_) {
-      print('Connected to socket server');
+      debugPrint('Connected to socket server');
       if (_currentUserId != null) {
         _socket!.emit(userOnline, {'userId': _currentUserId});
       }
     });
     
     _socket!.onDisconnect((_) {
-      print('Disconnected from socket server');
+      debugPrint('Disconnected from socket server');
     });
 
     _socket!.onConnectError((data) {
-      print('Socket connection error: $data');
+      debugPrint('Socket connection error: $data');
     });
   }
 

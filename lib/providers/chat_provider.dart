@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/message_model.dart';
 import '../services/database_service.dart';
 import '../services/socket_service.dart';
@@ -7,7 +6,7 @@ import '../services/socket_service.dart';
 class ChatProvider extends ChangeNotifier {
   final DatabaseService _dbService = DatabaseService();
   final SocketService _socketService = SocketService();
-  
+
   List<Message> _messages = [];
   String? _currentGroupId;
   bool _isLoading = false;
@@ -120,7 +119,7 @@ class ChatProvider extends ChangeNotifier {
       // Send to server
       await _dbService.sendMessage(message);
       await _socketService.sendMessage(message);
-      
+
       return true;
     } catch (e) {
       // Remove from local list if send failed
@@ -145,7 +144,7 @@ class ChatProvider extends ChangeNotifier {
 
       await _dbService.sendMessage(message);
       await _socketService.sendMessage(message);
-      
+
       return true;
     } catch (e) {
       _errorMessage = 'Failed to send system message: $e';
@@ -168,7 +167,7 @@ class ChatProvider extends ChangeNotifier {
   Future<bool> editMessage(String messageId, String newContent) async {
     try {
       await _dbService.updateMessage(messageId, newContent);
-      
+
       final index = _messages.indexWhere((m) => m.id == messageId);
       if (index != -1) {
         _messages[index] = _messages[index].copyWith(
@@ -177,7 +176,7 @@ class ChatProvider extends ChangeNotifier {
         );
         notifyListeners();
       }
-      
+
       return true;
     } catch (e) {
       _errorMessage = 'Failed to edit message: $e';

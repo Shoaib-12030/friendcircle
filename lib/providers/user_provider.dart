@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
 import '../services/database_service.dart';
 
 class UserProvider extends ChangeNotifier {
   final DatabaseService _dbService = DatabaseService();
-  
+
   List<User> _friends = [];
   List<User> _friendRequests = [];
   List<User> _searchResults = [];

@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/group_model.dart';
 import '../models/user_model.dart';
 import '../services/database_service.dart';
 
 class GroupProvider extends ChangeNotifier {
   final DatabaseService _dbService = DatabaseService();
-  
+
   List<Group> _userGroups = [];
   Group? _selectedGroup;
   List<User> _groupMembers = [];
@@ -141,17 +140,17 @@ class GroupProvider extends ChangeNotifier {
       notifyListeners();
 
       await _dbService.updateGroup(group);
-      
+
       // Update in local lists
       final index = _userGroups.indexWhere((g) => g.id == group.id);
       if (index != -1) {
         _userGroups[index] = group;
       }
-      
+
       if (_selectedGroup?.id == group.id) {
         _selectedGroup = group;
       }
-      
+
       return true;
     } catch (e) {
       _errorMessage = 'Failed to update group: $e';
@@ -169,12 +168,12 @@ class GroupProvider extends ChangeNotifier {
 
       await _dbService.removeGroupMember(groupId, userId);
       _userGroups.removeWhere((g) => g.id == groupId);
-      
+
       if (_selectedGroup?.id == groupId) {
         _selectedGroup = null;
         _groupMembers = [];
       }
-      
+
       return true;
     } catch (e) {
       _errorMessage = 'Failed to leave group: $e';
@@ -188,11 +187,11 @@ class GroupProvider extends ChangeNotifier {
   String generateInviteCode() {
     // Generate a random 6-character invite code
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    return String.fromCharCodes(
-      Iterable.generate(6, (_) => chars.codeUnitAt(
-        (DateTime.now().millisecondsSinceEpoch * DateTime.now().microsecond) % chars.length
-      ))
-    );
+    return String.fromCharCodes(Iterable.generate(
+        6,
+        (_) => chars.codeUnitAt((DateTime.now().millisecondsSinceEpoch *
+                DateTime.now().microsecond) %
+            chars.length)));
   }
 
   void clearSelectedGroup() {
