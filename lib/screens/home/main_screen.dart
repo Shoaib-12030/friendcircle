@@ -71,7 +71,7 @@ class _MainScreenState extends State<MainScreen> {
   Future<void> _loadUserData() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final groupProvider = Provider.of<GroupProvider>(context, listen: false);
-    
+
     if (authProvider.currentUser != null) {
       await groupProvider.loadUserGroups(authProvider.currentUser!.id);
     }

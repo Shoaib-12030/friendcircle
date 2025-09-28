@@ -5,22 +5,22 @@ class AppTheme {
   static const Color primaryColor = Color(0xFF6B73FF);
   static const Color secondaryColor = Color(0xFF9C27B0);
   static const Color accentColor = Color(0xFFFF6B6B);
-  
+
   // Neutral Colors
   static const Color backgroundColor = Color(0xFFF8F9FA);
   static const Color surfaceColor = Colors.white;
   static const Color cardColor = Colors.white;
-  
+
   // Text Colors
   static const Color textPrimary = Color(0xFF1A1A1A);
   static const Color textSecondary = Color(0xFF666666);
   static const Color textHint = Color(0xFF9E9E9E);
-  
+
   // Status Colors
   static const Color successColor = Color(0xFF4CAF50);
   static const Color errorColor = Color(0xFFF44336);
   static const Color warningColor = Color(0xFFFF9800);
-  
+
   // Light Theme
   static ThemeData lightTheme = ThemeData(
     primarySwatch: MaterialColor(
@@ -47,8 +47,7 @@ class AppTheme {
     ),
     scaffoldBackgroundColor: backgroundColor,
     cardColor: cardColor,
-    fontFamily: 'Poppins',
-    
+
     // AppBar Theme
     appBarTheme: const AppBarTheme(
       backgroundColor: primaryColor,
@@ -56,13 +55,13 @@ class AppTheme {
       elevation: 0,
       centerTitle: true,
       titleTextStyle: TextStyle(
-        fontFamily: 'Poppins',
+
         fontSize: 18,
         fontWeight: FontWeight.w600,
         color: Colors.white,
       ),
     ),
-    
+
     // Elevated Button Theme
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
@@ -74,25 +73,25 @@ class AppTheme {
         ),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         textStyle: const TextStyle(
-          fontFamily: 'Poppins',
+  
           fontSize: 16,
           fontWeight: FontWeight.w600,
         ),
       ),
     ),
-    
+
     // Text Button Theme
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: primaryColor,
         textStyle: const TextStyle(
-          fontFamily: 'Poppins',
+  
           fontSize: 16,
           fontWeight: FontWeight.w600,
         ),
       ),
     ),
-    
+
     // Input Decoration Theme
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
@@ -115,11 +114,11 @@ class AppTheme {
         borderSide: const BorderSide(color: errorColor),
       ),
       hintStyle: const TextStyle(
-        fontFamily: 'Poppins',
+
         color: textHint,
       ),
     ),
-    
+
     // Card Theme
     cardTheme: const CardThemeData(
       color: cardColor,
@@ -128,7 +127,7 @@ class AppTheme {
         borderRadius: BorderRadius.all(Radius.circular(16)),
       ),
     ),
-    
+
     // Bottom Navigation Bar Theme
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: surfaceColor,
@@ -138,7 +137,7 @@ class AppTheme {
       elevation: 8,
     ),
   );
-  
+
   // Dark Theme
   static ThemeData darkTheme = ThemeData(
     primarySwatch: MaterialColor(
@@ -165,8 +164,7 @@ class AppTheme {
     ),
     scaffoldBackgroundColor: const Color(0xFF121212),
     cardColor: const Color(0xFF1E1E1E),
-    fontFamily: 'Poppins',
-    
+
     // AppBar Theme
     appBarTheme: const AppBarTheme(
       backgroundColor: Color(0xFF1E1E1E),
@@ -174,7 +172,7 @@ class AppTheme {
       elevation: 0,
       centerTitle: true,
       titleTextStyle: TextStyle(
-        fontFamily: 'Poppins',
+
         fontSize: 18,
         fontWeight: FontWeight.w600,
         color: Colors.white,

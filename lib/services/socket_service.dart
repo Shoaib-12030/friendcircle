@@ -5,7 +5,7 @@ import '../models/message_model.dart';
 class SocketService {
   io.Socket? _socket;
   String? _currentUserId;
-  
+
   // Socket Events
   static const String messageReceived = 'message_received';
   static const String messageSent = 'send_message';
@@ -17,7 +17,7 @@ class SocketService {
 
   void initializeSocket({String? userId}) {
     _currentUserId = userId;
-    
+
     // Initialize socket connection
     _socket = io.io(
       'http://localhost:3000', // Replace with your backend URL
@@ -28,14 +28,14 @@ class SocketService {
     );
 
     _socket!.connect();
-    
+
     _socket!.onConnect((_) {
       debugPrint('Connected to socket server');
       if (_currentUserId != null) {
         _socket!.emit(userOnline, {'userId': _currentUserId});
       }
     });
-    
+
     _socket!.onDisconnect((_) {
       debugPrint('Disconnected from socket server');
     });

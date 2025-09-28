@@ -27,27 +27,27 @@ class DatabaseService {
 
   Future<List<User>> getUsersByIds(List<String> userIds) async {
     if (userIds.isEmpty) return [];
-    
+
     final List<User> users = [];
     // Firestore 'in' queries are limited to 10 items
     const batchSize = 10;
-    
+
     for (int i = 0; i < userIds.length; i += batchSize) {
       final batch = userIds.skip(i).take(batchSize).toList();
       final snapshot = await _firestore
           .collection('users')
           .where(FieldPath.documentId, whereIn: batch)
           .get();
-      
+
       users.addAll(snapshot.docs.map((doc) => User.fromMap(doc.data())));
     }
-    
+
     return users;
   }
 
   Future<List<User>> searchUsers(String query) async {
     final List<User> results = [];
-    
+
     // Search by name
     final nameQuery = await _firestore
         .collection('users')
@@ -55,9 +55,9 @@ class DatabaseService {
         .where('name', isLessThan: '${query}z')
         .limit(20)
         .get();
-    
+
     results.addAll(nameQuery.docs.map((doc) => User.fromMap(doc.data())));
-    
+
     // Search by nickname
     final nicknameQuery = await _firestore
         .collection('users')
@@ -65,9 +65,9 @@ class DatabaseService {
         .where('nickname', isLessThan: '${query}z')
         .limit(20)
         .get();
-    
+
     results.addAll(nicknameQuery.docs.map((doc) => User.fromMap(doc.data())));
-    
+
     // Search by email
     if (query.contains('@')) {
       final emailQuery = await _firestore
@@ -75,16 +75,16 @@ class DatabaseService {
           .where('email', isEqualTo: query)
           .limit(20)
           .get();
-      
+
       results.addAll(emailQuery.docs.map((doc) => User.fromMap(doc.data())));
     }
-    
+
     // Remove duplicates
     final Map<String, User> uniqueUsers = {};
     for (final user in results) {
       uniqueUsers[user.id] = user;
     }
-    
+
     return uniqueUsers.values.toList();
   }
 
@@ -104,8 +104,9 @@ class DatabaseService {
         .where('toUserId', isEqualTo: userId)
         .where('status', isEqualTo: 'pending')
         .get();
-    
-    final fromUserIds = snapshot.docs.map((doc) => doc.data()['fromUserId'] as String).toList();
+
+    final fromUserIds =
+        snapshot.docs.map((doc) => doc.data()['fromUserId'] as String).toList();
     return getUsersByIds(fromUserIds);
   }
 
@@ -114,16 +115,16 @@ class DatabaseService {
     await _firestore.runTransaction((transaction) async {
       final userDoc = _firestore.collection('users').doc(userId);
       final friendDoc = _firestore.collection('users').doc(friendId);
-      
+
       transaction.update(userDoc, {
         'friendIds': FieldValue.arrayUnion([friendId])
       });
-      
+
       transaction.update(friendDoc, {
         'friendIds': FieldValue.arrayUnion([userId])
       });
     });
-    
+
     // Update friend request status
     final requestQuery = await _firestore
         .collection('friend_requests')
@@ -131,7 +132,7 @@ class DatabaseService {
         .where('toUserId', isEqualTo: userId)
         .where('status', isEqualTo: 'pending')
         .get();
-    
+
     for (final doc in requestQuery.docs) {
       await doc.reference.update({'status': 'accepted'});
     }
@@ -144,7 +145,7 @@ class DatabaseService {
         .where('toUserId', isEqualTo: userId)
         .where('status', isEqualTo: 'pending')
         .get();
-    
+
     for (final doc in requestQuery.docs) {
       await doc.reference.update({'status': 'declined'});
     }
@@ -154,11 +155,11 @@ class DatabaseService {
     await _firestore.runTransaction((transaction) async {
       final userDoc = _firestore.collection('users').doc(userId);
       final friendDoc = _firestore.collection('users').doc(friendId);
-      
+
       transaction.update(userDoc, {
         'friendIds': FieldValue.arrayRemove([friendId])
       });
-      
+
       transaction.update(friendDoc, {
         'friendIds': FieldValue.arrayRemove([userId])
       });
@@ -168,7 +169,7 @@ class DatabaseService {
   // Group Operations
   Future<void> createGroup(Group group) async {
     await _firestore.collection('groups').doc(group.id).set(group.toMap());
-    
+
     // Update all members' group lists
     for (final memberId in group.memberIds) {
       await _firestore.collection('users').doc(memberId).update({
@@ -191,7 +192,7 @@ class DatabaseService {
         .where('inviteCode', isEqualTo: inviteCode)
         .limit(1)
         .get();
-    
+
     if (snapshot.docs.isNotEmpty) {
       return Group.fromMap(snapshot.docs.first.data());
     }
@@ -203,7 +204,7 @@ class DatabaseService {
         .collection('groups')
         .where('memberIds', arrayContains: userId)
         .get();
-    
+
     return snapshot.docs.map((doc) => Group.fromMap(doc.data())).toList();
   }
 
@@ -215,11 +216,11 @@ class DatabaseService {
     await _firestore.runTransaction((transaction) async {
       final groupDoc = _firestore.collection('groups').doc(groupId);
       final userDoc = _firestore.collection('users').doc(userId);
-      
+
       transaction.update(groupDoc, {
         'memberIds': FieldValue.arrayUnion([userId])
       });
-      
+
       transaction.update(userDoc, {
         'groupIds': FieldValue.arrayUnion([groupId])
       });
@@ -230,12 +231,12 @@ class DatabaseService {
     await _firestore.runTransaction((transaction) async {
       final groupDoc = _firestore.collection('groups').doc(groupId);
       final userDoc = _firestore.collection('users').doc(userId);
-      
+
       transaction.update(groupDoc, {
         'memberIds': FieldValue.arrayRemove([userId]),
         'adminIds': FieldValue.arrayRemove([userId])
       });
-      
+
       transaction.update(userDoc, {
         'groupIds': FieldValue.arrayRemove([groupId])
       });
@@ -261,7 +262,7 @@ class DatabaseService {
         .where('groupId', isEqualTo: groupId)
         .orderBy('startDate', descending: false)
         .get();
-    
+
     return snapshot.docs.map((doc) => Event.fromMap(doc.data())).toList();
   }
 
@@ -275,7 +276,10 @@ class DatabaseService {
 
   // Expense Operations
   Future<void> createExpense(Expense expense) async {
-    await _firestore.collection('expenses').doc(expense.id).set(expense.toMap());
+    await _firestore
+        .collection('expenses')
+        .doc(expense.id)
+        .set(expense.toMap());
   }
 
   Future<Expense?> getExpense(String expenseId) async {
@@ -292,12 +296,15 @@ class DatabaseService {
         .where('groupId', isEqualTo: groupId)
         .orderBy('date', descending: true)
         .get();
-    
+
     return snapshot.docs.map((doc) => Expense.fromMap(doc.data())).toList();
   }
 
   Future<void> updateExpense(Expense expense) async {
-    await _firestore.collection('expenses').doc(expense.id).update(expense.toMap());
+    await _firestore
+        .collection('expenses')
+        .doc(expense.id)
+        .update(expense.toMap());
   }
 
   Future<void> deleteExpense(String expenseId) async {
@@ -306,22 +313,28 @@ class DatabaseService {
 
   // Message Operations
   Future<void> sendMessage(Message message) async {
-    await _firestore.collection('messages').doc(message.id).set(message.toMap());
+    await _firestore
+        .collection('messages')
+        .doc(message.id)
+        .set(message.toMap());
   }
 
-  Future<List<Message>> getGroupMessages(String groupId, {int limit = 50, DateTime? startAfter}) async {
+  Future<List<Message>> getGroupMessages(String groupId,
+      {int limit = 50, DateTime? startAfter}) async {
     Query query = _firestore
         .collection('messages')
         .where('groupId', isEqualTo: groupId)
         .orderBy('timestamp', descending: true)
         .limit(limit);
-    
+
     if (startAfter != null) {
       query = query.startAfter([startAfter]);
     }
-    
+
     final snapshot = await query.get();
-    return snapshot.docs.map((doc) => Message.fromMap(doc.data() as Map<String, dynamic>)).toList();
+    return snapshot.docs
+        .map((doc) => Message.fromMap(doc.data() as Map<String, dynamic>))
+        .toList();
   }
 
   Future<void> deleteMessage(String messageId) async {
@@ -343,9 +356,8 @@ class DatabaseService {
         .orderBy('timestamp', descending: true)
         .limit(50)
         .snapshots()
-        .map((snapshot) => 
-            snapshot.docs.map((doc) => Message.fromMap(doc.data())).toList()
-        );
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => Message.fromMap(doc.data())).toList());
   }
 
   Stream<List<Group>> getUserGroupsStream(String userId) {
@@ -353,8 +365,7 @@ class DatabaseService {
         .collection('groups')
         .where('memberIds', arrayContains: userId)
         .snapshots()
-        .map((snapshot) => 
-            snapshot.docs.map((doc) => Group.fromMap(doc.data())).toList()
-        );
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => Group.fromMap(doc.data())).toList());
   }
 }

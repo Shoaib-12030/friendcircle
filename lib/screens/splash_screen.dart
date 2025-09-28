@@ -11,7 +11,7 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> 
+class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -20,12 +20,12 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
-    
+
     _animationController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
     );
-    
+
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
@@ -33,7 +33,7 @@ class _SplashScreenState extends State<SplashScreen>
       parent: _animationController,
       curve: Curves.easeIn,
     ));
-    
+
     _scaleAnimation = Tween<double>(
       begin: 0.5,
       end: 1.0,
@@ -41,17 +41,17 @@ class _SplashScreenState extends State<SplashScreen>
       parent: _animationController,
       curve: Curves.elasticOut,
     ));
-    
+
     _animationController.forward();
     _checkAuthStatus();
   }
 
   Future<void> _checkAuthStatus() async {
     await Future.delayed(const Duration(seconds: 3));
-    
+
     if (mounted) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      
+
       if (authProvider.isAuthenticated) {
         Get.offAllNamed(AppRoutes.main);
       } else {
@@ -112,9 +112,9 @@ class _SplashScreenState extends State<SplashScreen>
                           color: Color(0xFF6B73FF),
                         ),
                       ),
-                      
+
                       const SizedBox(height: 30),
-                      
+
                       // App Name
                       const Text(
                         'Friend Circle',
@@ -125,9 +125,9 @@ class _SplashScreenState extends State<SplashScreen>
                           fontFamily: 'Poppins',
                         ),
                       ),
-                      
+
                       const SizedBox(height: 10),
-                      
+
                       // Subtitle
                       const Text(
                         'Connect • Plan • Share',
@@ -137,15 +137,16 @@ class _SplashScreenState extends State<SplashScreen>
                           fontFamily: 'Poppins',
                         ),
                       ),
-                      
+
                       const SizedBox(height: 50),
-                      
+
                       // Loading indicator
                       const SizedBox(
                         width: 40,
                         height: 40,
                         child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
                           strokeWidth: 3,
                         ),
                       ),
