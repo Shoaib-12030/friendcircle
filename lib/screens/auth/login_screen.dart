@@ -242,6 +242,23 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
                 
+                const SizedBox(height: 12),
+                
+                // Forgot Password Link
+                Center(
+                  child: TextButton(
+                    onPressed: () => Get.toNamed(AppRoutes.forgotPassword),
+                    child: const Text(
+                      'Forgot Password?',
+                      style: TextStyle(
+                        color: Color(0xFF666666),
+                        fontSize: 14,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ),
+                
                 const SizedBox(height: 20),
               ],
             ),

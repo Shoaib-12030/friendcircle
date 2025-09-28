@@ -458,6 +458,30 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  // Password reset methods
+  Future<bool> sendPasswordResetEmail(String email) async {
+    try {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+
+      await _auth.sendPasswordResetEmail(email: email);
+      debugPrint('Password reset email sent to $email');
+      return true;
+    } on firebase_auth.FirebaseAuthException catch (e) {
+      debugPrint('Password reset error: ${e.code} - ${e.message}');
+      _errorMessage = _getFirebaseErrorMessage(e.code);
+      return false;
+    } catch (e) {
+      debugPrint('Password reset error: $e');
+      _errorMessage = 'Failed to send password reset email. Please try again.';
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   String _getFirebaseErrorMessage(String code) {
     switch (code) {
       case 'user-not-found':
@@ -474,6 +498,14 @@ class AuthProvider extends ChangeNotifier {
         return 'This user account has been disabled.';
       case 'too-many-requests':
         return 'Too many requests. Try again later.';
+      case 'auth/user-not-found':
+        return 'No account found with this email address.';
+      case 'auth/invalid-email':
+        return 'Please enter a valid email address.';
+      case 'auth/missing-email':
+        return 'Email address is required.';
+      case 'auth/quota-exceeded':
+        return 'Password reset limit exceeded. Please try again later.';
       default:
         return 'An error occurred. Please try again.';
     }
