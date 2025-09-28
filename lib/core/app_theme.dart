@@ -55,7 +55,6 @@ class AppTheme {
       elevation: 0,
       centerTitle: true,
       titleTextStyle: TextStyle(
-
         fontSize: 18,
         fontWeight: FontWeight.w600,
         color: Colors.white,
@@ -73,7 +72,6 @@ class AppTheme {
         ),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         textStyle: const TextStyle(
-  
           fontSize: 16,
           fontWeight: FontWeight.w600,
         ),
@@ -85,7 +83,6 @@ class AppTheme {
       style: TextButton.styleFrom(
         foregroundColor: primaryColor,
         textStyle: const TextStyle(
-  
           fontSize: 16,
           fontWeight: FontWeight.w600,
         ),
@@ -114,7 +111,6 @@ class AppTheme {
         borderSide: const BorderSide(color: errorColor),
       ),
       hintStyle: const TextStyle(
-
         color: textHint,
       ),
     ),
@@ -172,7 +168,6 @@ class AppTheme {
       elevation: 0,
       centerTitle: true,
       titleTextStyle: TextStyle(
-
         fontSize: 18,
         fontWeight: FontWeight.w600,
         color: Colors.white,
