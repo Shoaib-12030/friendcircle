@@ -45,7 +45,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.friendcircle.friend_circle"
+        applicationId "com.shoaib.friendcircle"
         minSdkVersion flutter.minSdkVersion
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()

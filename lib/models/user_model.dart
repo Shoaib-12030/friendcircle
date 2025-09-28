@@ -1,11 +1,16 @@
 class User {
   final String id;
+  final String? firebaseUid; // Store Firebase UID separately
   final String email;
   final String name;
   final String nickname;
   final String? photoUrl;
   final String? status;
   final String? phoneNumber;
+  final String? dateOfBirth;
+  final String? gender;
+  final String? address;
+  final bool isEmailVerified;
   final DateTime createdAt;
   final DateTime lastSeen;
   final bool isOnline;
@@ -14,12 +19,17 @@ class User {
 
   User({
     required this.id,
+    this.firebaseUid,
     required this.email,
     required this.name,
     required this.nickname,
     this.photoUrl,
     this.status,
     this.phoneNumber,
+    this.dateOfBirth,
+    this.gender,
+    this.address,
+    this.isEmailVerified = false,
     required this.createdAt,
     required this.lastSeen,
     this.isOnline = false,
@@ -30,12 +40,17 @@ class User {
   factory User.fromMap(Map<String, dynamic> map) {
     return User(
       id: map['id'] ?? '',
+      firebaseUid: map['firebaseUid'],
       email: map['email'] ?? '',
       name: map['name'] ?? '',
       nickname: map['nickname'] ?? '',
       photoUrl: map['photoUrl'],
       status: map['status'],
       phoneNumber: map['phoneNumber'],
+      dateOfBirth: map['dateOfBirth'],
+      gender: map['gender'],
+      address: map['address'],
+      isEmailVerified: map['isEmailVerified'] ?? false,
       createdAt: DateTime.parse(map['createdAt']),
       lastSeen: DateTime.parse(map['lastSeen']),
       isOnline: map['isOnline'] ?? false,
@@ -47,12 +62,17 @@ class User {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
+      'firebaseUid': firebaseUid,
       'email': email,
       'name': name,
       'nickname': nickname,
       'photoUrl': photoUrl,
       'status': status,
       'phoneNumber': phoneNumber,
+      'dateOfBirth': dateOfBirth,
+      'gender': gender,
+      'address': address,
+      'isEmailVerified': isEmailVerified,
       'createdAt': createdAt.toIso8601String(),
       'lastSeen': lastSeen.toIso8601String(),
       'isOnline': isOnline,
@@ -63,12 +83,17 @@ class User {
 
   User copyWith({
     String? id,
+    String? firebaseUid,
     String? email,
     String? name,
     String? nickname,
     String? photoUrl,
     String? status,
     String? phoneNumber,
+    String? dateOfBirth,
+    String? gender,
+    String? address,
+    bool? isEmailVerified,
     DateTime? createdAt,
     DateTime? lastSeen,
     bool? isOnline,
@@ -77,12 +102,17 @@ class User {
   }) {
     return User(
       id: id ?? this.id,
+      firebaseUid: firebaseUid ?? this.firebaseUid,
       email: email ?? this.email,
       name: name ?? this.name,
       nickname: nickname ?? this.nickname,
       photoUrl: photoUrl ?? this.photoUrl,
       status: status ?? this.status,
       phoneNumber: phoneNumber ?? this.phoneNumber,
+      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      gender: gender ?? this.gender,
+      address: address ?? this.address,
+      isEmailVerified: isEmailVerified ?? this.isEmailVerified,
       createdAt: createdAt ?? this.createdAt,
       lastSeen: lastSeen ?? this.lastSeen,
       isOnline: isOnline ?? this.isOnline,

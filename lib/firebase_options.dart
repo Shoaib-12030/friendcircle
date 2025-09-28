@@ -44,21 +44,21 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'YOUR_WEB_API_KEY_HERE',
-    appId: '1:162211746751:web:XXXXXXXXXXXXXXXXXX',
+    apiKey: 'AIzaSyD1Sx_1NsZvVwQaXNQ-rSuekt7In8ozdEI',
+    appId: '1:162211746751:web:a4298923915c9ecd65470a',
     messagingSenderId: '162211746751',
     projectId: 'friendcircle-3e3ee',
     authDomain: 'friendcircle-3e3ee.firebaseapp.com',
-    storageBucket: 'friendcircle-3e3ee.appspot.com',
-    measurementId: 'G-XXXXXXXXXX',
+    storageBucket: 'friendcircle-3e3ee.firebasestorage.app',
+    measurementId: 'G-B8NFYLJMJ0',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyC_PLACEHOLDER_YOUR_ANDROID_API_KEY_HERE',
+    apiKey: 'AIzaSyCchCCkWvKpBmWIFC--wl1WnNnSERzca84',
     appId: '1:162211746751:android:b8cd16fccce927be65470a',
     messagingSenderId: '162211746751',
     projectId: 'friendcircle-3e3ee',
-    storageBucket: 'friendcircle-3e3ee.appspot.com',
+    storageBucket: 'friendcircle-3e3ee.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
@@ -67,7 +67,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '162211746751',
     projectId: 'friendcircle-3e3ee',
     storageBucket: 'friendcircle-3e3ee.appspot.com',
-    iosClientId: '162211746751-XXXXXXXXXXXXXXXXXXXXXXXXXX.apps.googleusercontent.com',
+    iosClientId:
+        '162211746751-XXXXXXXXXXXXXXXXXXXXXXXXXX.apps.googleusercontent.com',
     iosBundleId: 'com.friendcircle.friendCircle',
   );
 
@@ -77,7 +78,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '162211746751',
     projectId: 'friendcircle-3e3ee',
     storageBucket: 'friendcircle-3e3ee.appspot.com',
-    iosClientId: '162211746751-XXXXXXXXXXXXXXXXXXXXXXXXXX.apps.googleusercontent.com',
+    iosClientId:
+        '162211746751-XXXXXXXXXXXXXXXXXXXXXXXXXX.apps.googleusercontent.com',
     iosBundleId: 'com.friendcircle.friendCircle',
   );
 }
