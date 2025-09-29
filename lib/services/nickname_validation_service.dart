@@ -11,7 +11,8 @@ class NicknameValidationService {
   Future<bool> isNicknameAvailable(String nickname) async {
     try {
       final normalizedNickname = _normalizeNickname(nickname);
-      debugPrint('Checking availability for normalized nickname: $normalizedNickname');
+      debugPrint(
+          'Checking availability for normalized nickname: $normalizedNickname');
 
       if (normalizedNickname.isEmpty) {
         debugPrint('Normalized nickname is empty, returning false');
@@ -19,6 +20,8 @@ class NicknameValidationService {
       }
 
       debugPrint('Executing Firestore query for nickname: $normalizedNickname');
+      debugPrint(
+          'Query: users collection where nickname == $normalizedNickname');
       final query = await _firestore
           .collection('users')
           .where('nickname', isEqualTo: normalizedNickname)
@@ -26,8 +29,17 @@ class NicknameValidationService {
           .get();
 
       final isAvailable = query.docs.isEmpty;
-      debugPrint('Query result: ${query.docs.length} docs found, available: $isAvailable');
-      
+      debugPrint(
+          'Query result: ${query.docs.length} docs found, available: $isAvailable');
+
+      // If documents found, log them for debugging
+      if (query.docs.isNotEmpty) {
+        for (var doc in query.docs) {
+          debugPrint('Found existing nickname in document: ${doc.id}');
+          debugPrint('Document data: ${doc.data()}');
+        }
+      }
+
       return isAvailable;
     } on FirebaseException catch (e) {
       debugPrint(
@@ -37,11 +49,14 @@ class NicknameValidationService {
       if (e.code == 'permission-denied') {
         debugPrint(
             'Permission denied - this is normal during registration before authentication');
+        debugPrint(
+            'Will validate nickname server-side during actual registration');
         // For registration flow, we'll do client-side format validation only
         // and validate uniqueness server-side during actual registration
         return true;
       }
 
+      debugPrint('Other Firebase error: ${e.code}');
       return false;
     } catch (e) {
       debugPrint('Error checking nickname availability: $e');
@@ -195,20 +210,20 @@ class NicknameValidationService {
       };
     }
 
-    // Allow letters, numbers, underscores, and hyphens only
-    if (!RegExp(r'^[a-zA-Z0-9_-]+$').hasMatch(trimmed)) {
+    // Allow lowercase letters, numbers, and underscores only
+    if (!RegExp(r'^[a-z0-9_]+$').hasMatch(trimmed)) {
       return {
         'isValid': false,
         'error':
-            'Nickname can only contain letters, numbers, underscores, and hyphens',
+            'Nickname can only contain lowercase letters, numbers, and underscores',
       };
     }
 
-    // Must start with a letter
-    if (!RegExp(r'^[a-zA-Z]').hasMatch(trimmed)) {
+    // Must start with a lowercase letter
+    if (!RegExp(r'^[a-z]').hasMatch(trimmed)) {
       return {
         'isValid': false,
-        'error': 'Nickname must start with a letter',
+        'error': 'Nickname must start with a lowercase letter',
       };
     }
 

@@ -1,8 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 import '../providers/auth_provider.dart';
 import '../core/app_theme.dart';
+
+// Custom formatter to convert text to lowercase
+class LowerCaseTextFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    return TextEditingValue(
+      text: newValue.text.toLowerCase(),
+      selection: newValue.selection,
+    );
+  }
+}
 
 class DynamicNicknameField extends StatefulWidget {
   final TextEditingController controller;
@@ -48,7 +63,7 @@ class _DynamicNicknameFieldState extends State<DynamicNicknameField> {
 
   void _onNicknameChanged() {
     final nickname = widget.controller.text.trim();
-    debugPrint('Nickname changed: "$nickname"');
+    debugPrint('🔄 Nickname changed: "$nickname" (length: ${nickname.length})');
 
     // Set typing state
     setState(() {
@@ -69,7 +84,8 @@ class _DynamicNicknameFieldState extends State<DynamicNicknameField> {
     final formatValidation = Provider.of<AuthProvider>(context, listen: false)
         .validateNicknameFormat(nickname);
 
-    debugPrint('Format validation result: ${formatValidation['isValid']}, error: ${formatValidation['error']}');
+    debugPrint(
+        '📝 Format validation - isValid: ${formatValidation['isValid']}, error: ${formatValidation['error']}');
 
     setState(() {
       _validationError = formatValidation['error'];
@@ -81,7 +97,8 @@ class _DynamicNicknameFieldState extends State<DynamicNicknameField> {
         ?.call(formatValidation['isValid'] && _isNicknameAvailable);
 
     if (nickname.isEmpty || !formatValidation['isValid']) {
-      debugPrint('Nickname empty or invalid format, skipping availability check');
+      debugPrint(
+          '⏹️ Stopping validation - nickname empty or invalid format');
       setState(() {
         _userIsTyping = false;
       });
@@ -89,23 +106,23 @@ class _DynamicNicknameFieldState extends State<DynamicNicknameField> {
     }
 
     // Debounce API calls for better performance
-    debugPrint('Setting up debounced availability check...');
+    debugPrint('⏲️ Setting up 600ms debounced availability check...');
     _debounceTimer = Timer(const Duration(milliseconds: 600), () {
       setState(() {
         _userIsTyping = false;
       });
-      debugPrint('Starting nickname availability check for: $nickname');
+      debugPrint('🚀 Starting availability check for: "$nickname"');
       _checkNicknameAvailability(nickname);
     });
   }
 
   Future<void> _checkNicknameAvailability(String nickname) async {
     if (nickname == _lastCheckedNickname) {
-      debugPrint('Skipping duplicate check for: $nickname');
+      debugPrint('⏭️ Skipping duplicate check for: "$nickname"');
       return;
     }
 
-    debugPrint('Checking availability for nickname: $nickname');
+    debugPrint('🔍 Starting availability check for: "$nickname"');
     setState(() {
       _isCheckingAvailability = true;
       _lastCheckedNickname = nickname;
@@ -115,11 +132,11 @@ class _DynamicNicknameFieldState extends State<DynamicNicknameField> {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
       // Check availability
-      debugPrint('Calling authProvider.checkNicknameAvailability...');
+      debugPrint('🌐 Calling Firebase to check availability...');
       final isAvailable =
           await authProvider.checkNicknameAvailability(nickname);
 
-      debugPrint('Availability result for $nickname: $isAvailable');
+      debugPrint('📊 Firebase result for "$nickname": available = $isAvailable');
 
       if (mounted) {
         setState(() {
@@ -131,27 +148,28 @@ class _DynamicNicknameFieldState extends State<DynamicNicknameField> {
         // Notify parent about validation state
         final isValid = isAvailable && _validationError == null;
         widget.onValidationChanged?.call(isValid);
-        debugPrint('Validation state updated: isValid=$isValid');
+        debugPrint('✅ Final validation state: isValid = $isValid');
 
         // If not available, get suggestions and similar nicknames
         if (!isAvailable) {
-          debugPrint('Nickname taken, getting suggestions...');
+          debugPrint('💡 Nickname taken, generating suggestions...');
           _getSuggestionsAndSimilar(nickname);
         }
       }
     } catch (e) {
-      debugPrint('Error checking nickname availability: $e');
+      debugPrint('❌ Error checking availability: $e');
       if (mounted) {
         setState(() {
           // For permission errors during registration, we'll be more lenient
           if (e.toString().contains('permission-denied')) {
             _validationError = null; // Don't show error for permission issues
-            _isNicknameAvailable = true; // Assume available, validate server-side
-            debugPrint('Permission denied - will validate during registration');
+            _isNicknameAvailable =
+                true; // Assume available, validate server-side
+            debugPrint('🔒 Permission denied - will validate during registration');
           } else {
             _validationError = 'Unable to check availability right now';
             _isNicknameAvailable = false;
-            debugPrint('Network or other error: $e');
+            debugPrint('🌐 Network or other error: $e');
           }
         });
         widget.onValidationChanged?.call(_isNicknameAvailable);
@@ -161,7 +179,7 @@ class _DynamicNicknameFieldState extends State<DynamicNicknameField> {
         setState(() {
           _isCheckingAvailability = false;
         });
-        debugPrint('Availability check completed for: $nickname');
+        debugPrint('🏁 Availability check completed for: "$nickname"');
       }
     }
   }
@@ -216,11 +234,18 @@ class _DynamicNicknameFieldState extends State<DynamicNicknameField> {
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Colors.red, width: 2),
             ),
-            hintText: 'Choose a unique nickname',
-            helperText: 'Used for friend search and identification',
+            hintText: 'e.g. john_doe123',
+            helperText: 'Only lowercase letters, numbers, and underscores',
             errorText: _validationError,
           ),
+          keyboardType: TextInputType.text,
           textCapitalization: TextCapitalization.none,
+          inputFormatters: [
+            // Only allow lowercase letters, numbers, and underscores
+            FilteringTextInputFormatter.allow(RegExp(r'^[a-z0-9_]*$')),
+            // Convert any input to lowercase (in case of programmatic input)
+            LowerCaseTextFormatter(),
+          ],
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
               return 'Nickname is required';
