@@ -7,6 +7,12 @@ service cloud.firestore {
       // Allow read for any authenticated user (for social features)
       allow read: if request.auth != null;
       
+      // Allow limited read access for nickname validation during registration
+      // This allows checking if nicknames exist before authentication
+      allow read: if request.auth == null && 
+                     request.query != null &&
+                     request.query.where != null;
+      
       // Allow create if user is authenticated (for registration)
       allow create: if request.auth != null && 
         request.auth.uid == request.resource.data.firebaseUid;
@@ -53,11 +59,29 @@ service cloud.firestore {
     }
     
     // Friend requests collection
-    match /friend_requests/{requestId} {
+    match /friendRequests/{requestId} {
       allow read, write: if request.auth != null && 
-        (request.auth.uid == resource.data.fromUserId || 
-         request.auth.uid == resource.data.toUserId);
+        (request.auth.uid == resource.data.senderId || 
+         request.auth.uid == resource.data.receiverId);
       allow create: if request.auth != null;
+    }
+
+    // Chat rooms collection
+    match /chatRooms/{chatRoomId} {
+      // Allow participants to read and write to their chat rooms
+      allow read, write: if request.auth != null && 
+                            request.auth.uid in resource.data.participantIds;
+      
+      // Allow creating chat rooms
+      allow create: if request.auth != null && 
+                       request.auth.uid in request.resource.data.participantIds;
+
+      // Messages subcollection
+      match /messages/{messageId} {
+        // Allow participants to read and write messages
+        allow read, write: if request.auth != null && 
+                              request.auth.uid in get(/databases/$(database)/documents/chatRooms/$(chatRoomId)).data.participantIds;
+      }
     }
   }
 }

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:get/get.dart';
 import '../providers/auth_provider.dart';
 import '../core/app_theme.dart';
+import '../widgets/dynamic_nickname_field.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -32,6 +33,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isPasswordMatch = true;
   bool _isEmailValid = true;
   bool _isMobileValid = true;
+  bool _isNicknameValid = false;
 
   @override
   void dispose() {
@@ -101,10 +103,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
       return;
     }
-    if (!_isPasswordMatch || !_isEmailValid || !_isMobileValid) {
+    if (!_isPasswordMatch ||
+        !_isEmailValid ||
+        !_isMobileValid ||
+        !_isNicknameValid) {
       Get.snackbar(
         'Validation Error',
-        'Please fix validation errors before continuing',
+        'Please fix all validation errors before continuing',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    // Ensure nickname is not empty
+    if (_nicknameController.text.trim().isEmpty) {
+      Get.snackbar(
+        'Nickname Required',
+        'Please enter a unique nickname for your account',
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
@@ -117,9 +133,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       email: _emailController.text.trim(),
       password: _passwordController.text,
       mobile: _mobileController.text.trim(),
-      nickname: _nicknameController.text.trim().isEmpty
-          ? _nameController.text.split(' ').first
-          : _nicknameController.text.trim(),
+      nickname: _nicknameController.text
+          .trim(), // Use the validated nickname directly
       dateOfBirth: _dobController.text.isEmpty ? null : _dobController.text,
       gender: _selectedGender,
       address: _addressController.text.trim().isEmpty
@@ -217,23 +232,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Nickname Field
-                    TextFormField(
+                    // Dynamic Nickname Field with validation and suggestions
+                    DynamicNicknameField(
                       controller: _nicknameController,
-                      decoration: InputDecoration(
-                        labelText: 'Nickname (optional)',
-                        prefixIcon: const Icon(Icons.badge),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                              color: AppTheme.primaryColor, width: 2),
-                        ),
-                        hintText: 'How friends should call you',
-                      ),
-                      textCapitalization: TextCapitalization.words,
+                      fullName: _nameController.text,
+                      onValidationChanged: (isValid) {
+                        setState(() {
+                          _isNicknameValid = isValid;
+                        });
+                      },
+                      onNicknameSelected: (nickname) {
+                        // Optional: Handle nickname selection
+                        debugPrint('Nickname selected: $nickname');
+                      },
                     ),
                     const SizedBox(height: 16),
 

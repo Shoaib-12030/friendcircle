@@ -10,7 +10,8 @@ import '../screens/friends/friends_screen.dart';
 import '../screens/groups/groups_screen.dart';
 import '../screens/events/events_screen.dart';
 import '../screens/expenses/expenses_screen.dart';
-import '../screens/placeholder_screens.dart';
+import '../screens/chat/chat_screen.dart';
+import '../screens/placeholder_screens.dart' hide ChatScreen;
 
 class AppRoutes {
   static const String splash = '/splash';

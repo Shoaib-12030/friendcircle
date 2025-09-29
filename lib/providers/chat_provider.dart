@@ -1,216 +1,477 @@
-import 'package:flutter/material.dart';
-import '../models/message_model.dart';
-import '../services/database_service.dart';
-import '../services/socket_service.dart';
+import 'dart:async';
+import 'package:flutter/foundation.dart';
+import '../models/chat_models.dart';
+import '../services/chat_service.dart';
 
 class ChatProvider extends ChangeNotifier {
-  final DatabaseService _dbService = DatabaseService();
-  final SocketService _socketService = SocketService();
+  final ChatService _chatService = ChatService();
 
-  List<Message> _messages = [];
-  String? _currentGroupId;
+  List<ChatRoom> _chatRooms = [];
+  List<Message> _currentChatMessages = [];
+  ChatRoom? _currentChatRoom;
   bool _isLoading = false;
+  bool _isSendingMessage = false;
   String? _errorMessage;
-  bool _isTyping = false;
+  Map<String, bool> _typingUsers = {}; // userId -> isTyping
+  StreamSubscription<List<Message>>? _messagesSubscription;
+  StreamSubscription<List<ChatRoom>>? _chatRoomsSubscription;
 
-  List<Message> get messages => _messages;
-  String? get currentGroupId => _currentGroupId;
+  // Getters
+  List<ChatRoom> get chatRooms => _chatRooms;
+  List<Message> get currentChatMessages => _currentChatMessages;
+  ChatRoom? get currentChatRoom => _currentChatRoom;
   bool get isLoading => _isLoading;
+  bool get isSendingMessage => _isSendingMessage;
   String? get errorMessage => _errorMessage;
-  bool get isTyping => _isTyping;
+  Map<String, bool> get typingUsers => _typingUsers;
 
-  ChatProvider() {
-    _socketService.initializeSocket();
-    _setupSocketListeners();
+  @override
+  void dispose() {
+    _messagesSubscription?.cancel();
+    _chatRoomsSubscription?.cancel();
+    super.dispose();
   }
 
-  void _setupSocketListeners() {
-    _socketService.onMessageReceived((message) {
-      if (message.groupId == _currentGroupId) {
-        _messages.insert(0, message);
-        notifyListeners();
-      }
-    });
-
-    _socketService.onTypingUpdate((data) {
-      if (data['groupId'] == _currentGroupId) {
-        _isTyping = data['isTyping'];
-        notifyListeners();
-      }
-    });
-  }
-
-  Future<void> joinGroupChat(String groupId) async {
+  /// Get or create private chat with a friend
+  Future<ChatRoom?> openPrivateChat({
+    required String currentUserId,
+    required String currentUserNickname,
+    required String friendId,
+    required String friendNickname,
+  }) async {
     try {
       _isLoading = true;
-      _currentGroupId = groupId;
+      _errorMessage = null;
       notifyListeners();
 
-      await _socketService.joinGroup(groupId);
-      await loadMessages(groupId);
-    } catch (e) {
-      _errorMessage = 'Failed to join group chat: $e';
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  Future<void> loadMessages(String groupId, {int limit = 50}) async {
-    try {
-      _isLoading = true;
-      notifyListeners();
-
-      _messages = await _dbService.getGroupMessages(groupId, limit: limit);
-    } catch (e) {
-      _errorMessage = 'Failed to load messages: $e';
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  Future<void> loadMoreMessages({int limit = 20}) async {
-    if (_currentGroupId == null || _messages.isEmpty) return;
-
-    try {
-      final lastMessage = _messages.last;
-      final moreMessages = await _dbService.getGroupMessages(
-        _currentGroupId!,
-        limit: limit,
-        startAfter: lastMessage.timestamp,
+      final chatRoom = await _chatService.createOrGetPrivateChat(
+        currentUserId: currentUserId,
+        currentUserNickname: currentUserNickname,
+        friendId: friendId,
+        friendNickname: friendNickname,
       );
 
-      _messages.addAll(moreMessages);
-      notifyListeners();
+      if (chatRoom != null) {
+        _currentChatRoom = chatRoom;
+        await _startListeningToMessages(chatRoom.id);
+        await markMessagesAsRead(chatRoom.id, currentUserId);
+      } else {
+        _errorMessage = 'Failed to open chat';
+      }
+
+      return chatRoom;
     } catch (e) {
-      _errorMessage = 'Failed to load more messages: $e';
+      _errorMessage = 'Failed to open chat: $e';
+      return null;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
-  Future<bool> sendMessage({
-    required String groupId,
+  /// Send a text message
+  Future<bool> sendTextMessage({
+    required String chatRoomId,
     required String senderId,
-    required String senderName,
-    required String content,
-    MessageType type = MessageType.text,
-    List<String>? attachments,
-    Map<String, dynamic>? metadata,
-    String? replyToId,
+    required String senderNickname,
+    required String message,
+    Message? replyToMessage,
   }) async {
+    if (message.trim().isEmpty) return false;
+
     try {
-      final message = Message(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        groupId: groupId,
+      _isSendingMessage = true;
+      _errorMessage = null;
+      notifyListeners();
+
+      final success = await _chatService.sendMessage(
+        chatRoomId: chatRoomId,
         senderId: senderId,
-        senderName: senderName,
-        content: content,
-        type: type,
-        timestamp: DateTime.now(),
-        attachments: attachments,
-        metadata: metadata,
-        replyToId: replyToId,
+        senderNickname: senderNickname,
+        messageType: MessageType.text,
+        textContent: message.trim(),
+        replyToMessage: replyToMessage,
       );
 
-      // Add to local list immediately for better UX
-      _messages.insert(0, message);
-      notifyListeners();
+      if (!success) {
+        _errorMessage = 'Failed to send message';
+      }
 
-      // Send to server
-      await _dbService.sendMessage(message);
-      await _socketService.sendMessage(message);
-
-      return true;
+      return success;
     } catch (e) {
-      // Remove from local list if send failed
-      _messages.removeWhere((m) => m.id == _messages.first.id);
       _errorMessage = 'Failed to send message: $e';
-      notifyListeners();
       return false;
+    } finally {
+      _isSendingMessage = false;
+      notifyListeners();
     }
   }
 
-  Future<bool> sendSystemMessage({
-    required String groupId,
-    required String content,
-    Map<String, dynamic>? metadata,
+  /// Send an image message
+  Future<bool> sendImageMessage({
+    required String chatRoomId,
+    required String senderId,
+    required String senderNickname,
+    required String imageUrl,
+    String? fileName,
+    String? thumbnailUrl,
+    Message? replyToMessage,
   }) async {
     try {
-      final message = Message.createSystemMessage(
-        groupId: groupId,
-        content: content,
-        metadata: metadata,
+      _isSendingMessage = true;
+      _errorMessage = null;
+      notifyListeners();
+
+      final success = await _chatService.sendMessage(
+        chatRoomId: chatRoomId,
+        senderId: senderId,
+        senderNickname: senderNickname,
+        messageType: MessageType.image,
+        mediaUrl: imageUrl,
+        mediaFileName: fileName,
+        thumbnailUrl: thumbnailUrl,
+        replyToMessage: replyToMessage,
       );
 
-      await _dbService.sendMessage(message);
-      await _socketService.sendMessage(message);
+      if (!success) {
+        _errorMessage = 'Failed to send image';
+      }
 
-      return true;
+      return success;
     } catch (e) {
-      _errorMessage = 'Failed to send system message: $e';
+      _errorMessage = 'Failed to send image: $e';
       return false;
+    } finally {
+      _isSendingMessage = false;
+      notifyListeners();
     }
   }
 
-  Future<bool> deleteMessage(String messageId) async {
+  /// Send a voice message
+  Future<bool> sendVoiceMessage({
+    required String chatRoomId,
+    required String senderId,
+    required String senderNickname,
+    required String voiceUrl,
+    required double duration,
+    String? fileName,
+    Message? replyToMessage,
+  }) async {
     try {
-      await _dbService.deleteMessage(messageId);
-      _messages.removeWhere((m) => m.id == messageId);
+      _isSendingMessage = true;
+      _errorMessage = null;
       notifyListeners();
-      return true;
+
+      final success = await _chatService.sendMessage(
+        chatRoomId: chatRoomId,
+        senderId: senderId,
+        senderNickname: senderNickname,
+        messageType: MessageType.voice,
+        mediaUrl: voiceUrl,
+        mediaFileName: fileName,
+        mediaDuration: duration,
+        replyToMessage: replyToMessage,
+      );
+
+      if (!success) {
+        _errorMessage = 'Failed to send voice message';
+      }
+
+      return success;
+    } catch (e) {
+      _errorMessage = 'Failed to send voice message: $e';
+      return false;
+    } finally {
+      _isSendingMessage = false;
+      notifyListeners();
+    }
+  }
+
+  /// Send a location message
+  Future<bool> sendLocationMessage({
+    required String chatRoomId,
+    required String senderId,
+    required String senderNickname,
+    required LocationData locationData,
+    Message? replyToMessage,
+  }) async {
+    try {
+      _isSendingMessage = true;
+      _errorMessage = null;
+      notifyListeners();
+
+      final success = await _chatService.sendMessage(
+        chatRoomId: chatRoomId,
+        senderId: senderId,
+        senderNickname: senderNickname,
+        messageType: MessageType.location,
+        locationData: locationData,
+        replyToMessage: replyToMessage,
+      );
+
+      if (!success) {
+        _errorMessage = 'Failed to send location';
+      }
+
+      return success;
+    } catch (e) {
+      _errorMessage = 'Failed to send location: $e';
+      return false;
+    } finally {
+      _isSendingMessage = false;
+      notifyListeners();
+    }
+  }
+
+  /// Send a sticker message
+  Future<bool> sendStickerMessage({
+    required String chatRoomId,
+    required String senderId,
+    required String senderNickname,
+    required String stickerPackId,
+    required String stickerId,
+    Message? replyToMessage,
+  }) async {
+    try {
+      _isSendingMessage = true;
+      _errorMessage = null;
+      notifyListeners();
+
+      final success = await _chatService.sendMessage(
+        chatRoomId: chatRoomId,
+        senderId: senderId,
+        senderNickname: senderNickname,
+        messageType: MessageType.sticker,
+        stickerPackId: stickerPackId,
+        stickerId: stickerId,
+        replyToMessage: replyToMessage,
+      );
+
+      if (!success) {
+        _errorMessage = 'Failed to send sticker';
+      }
+
+      return success;
+    } catch (e) {
+      _errorMessage = 'Failed to send sticker: $e';
+      return false;
+    } finally {
+      _isSendingMessage = false;
+      notifyListeners();
+    }
+  }
+
+  /// Load user's chat rooms (alias method for compatibility)
+  Future<void> loadUserChatRooms(String userId) async {
+    await loadChatRooms(userId);
+  }
+
+  /// Load user's chat rooms
+  Future<void> loadChatRooms(String userId) async {
+    try {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+
+      _chatRooms = await _chatService.getUserChatRooms(userId);
+
+      // Start listening to real-time updates
+      _startListeningToChatRooms(userId);
+    } catch (e) {
+      _errorMessage = 'Failed to load chat rooms: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Mark messages as read
+  Future<void> markMessagesAsRead(String chatRoomId, String userId) async {
+    try {
+      await _chatService.markMessagesAsRead(chatRoomId, userId);
+
+      // Update local chat room unread count
+      final chatRoomIndex =
+          _chatRooms.indexWhere((room) => room.id == chatRoomId);
+      if (chatRoomIndex != -1) {
+        final updatedUnreadCount =
+            Map<String, int>.from(_chatRooms[chatRoomIndex].unreadCount);
+        updatedUnreadCount[userId] = 0;
+
+        _chatRooms[chatRoomIndex] = _chatRooms[chatRoomIndex].copyWith(
+          unreadCount: updatedUnreadCount,
+        );
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Failed to mark messages as read: $e');
+    }
+  }
+
+  /// Delete a message
+  Future<bool> deleteMessage(String chatRoomId, String messageId) async {
+    try {
+      final success = await _chatService.deleteMessage(chatRoomId, messageId);
+
+      if (!success) {
+        _errorMessage = 'Failed to delete message';
+      }
+
+      return success;
     } catch (e) {
       _errorMessage = 'Failed to delete message: $e';
       return false;
     }
   }
 
-  Future<bool> editMessage(String messageId, String newContent) async {
+  /// Edit a message
+  Future<bool> editMessage({
+    required String chatRoomId,
+    required String messageId,
+    required String newContent,
+  }) async {
     try {
-      await _dbService.updateMessage(messageId, newContent);
+      final success = await _chatService.editMessage(
+        chatRoomId: chatRoomId,
+        messageId: messageId,
+        newContent: newContent,
+      );
 
-      final index = _messages.indexWhere((m) => m.id == messageId);
-      if (index != -1) {
-        _messages[index] = _messages[index].copyWith(
-          content: newContent,
-          isEdited: true,
-        );
-        notifyListeners();
+      if (!success) {
+        _errorMessage = 'Failed to edit message';
       }
 
-      return true;
+      return success;
     } catch (e) {
       _errorMessage = 'Failed to edit message: $e';
       return false;
     }
   }
 
-  void updateTypingStatus(String groupId, bool isTyping) {
-    _socketService.updateTypingStatus(groupId, isTyping);
-  }
+  /// Update typing status
+  Future<void> updateTypingStatus({
+    required String chatRoomId,
+    required String userId,
+    required bool isTyping,
+  }) async {
+    try {
+      await _chatService.updateTypingStatus(
+        chatRoomId: chatRoomId,
+        userId: userId,
+        isTyping: isTyping,
+      );
 
-  void leaveGroupChat() {
-    if (_currentGroupId != null) {
-      _socketService.leaveGroup(_currentGroupId!);
-      _currentGroupId = null;
-      _messages = [];
-      _isTyping = false;
+      // Update local typing status
+      if (isTyping) {
+        _typingUsers[userId] = true;
+      } else {
+        _typingUsers.remove(userId);
+      }
       notifyListeners();
+    } catch (e) {
+      debugPrint('Failed to update typing status: $e');
     }
   }
 
-  void clearMessages() {
-    _messages = [];
+  /// Search messages in current chat
+  Future<List<Message>> searchMessages(String query) async {
+    if (_currentChatRoom == null || query.trim().isEmpty) return [];
+
+    try {
+      return await _chatService.searchMessages(
+        chatRoomId: _currentChatRoom!.id,
+        searchQuery: query.trim(),
+      );
+    } catch (e) {
+      debugPrint('Failed to search messages: $e');
+      return [];
+    }
+  }
+
+  /// Archive chat room
+  Future<bool> archiveChatRoom(String chatRoomId) async {
+    try {
+      final success = await _chatService.archiveChatRoom(chatRoomId);
+
+      if (success) {
+        _chatRooms.removeWhere((room) => room.id == chatRoomId);
+        notifyListeners();
+      } else {
+        _errorMessage = 'Failed to archive chat';
+      }
+
+      return success;
+    } catch (e) {
+      _errorMessage = 'Failed to archive chat: $e';
+      return false;
+    }
+  }
+
+  /// Leave current chat (for cleanup)
+  void leaveCurrentChat() {
+    _messagesSubscription?.cancel();
+    _currentChatRoom = null;
+    _currentChatMessages = [];
+    _typingUsers.clear();
     notifyListeners();
   }
 
+  /// Clear error message
   void clearError() {
     _errorMessage = null;
     notifyListeners();
   }
 
-  @override
-  void dispose() {
-    _socketService.dispose();
-    super.dispose();
+  /// Start listening to messages for the current chat room
+  Future<void> _startListeningToMessages(String chatRoomId) async {
+    _messagesSubscription?.cancel();
+
+    _messagesSubscription = _chatService.streamMessages(chatRoomId).listen(
+      (messages) {
+        _currentChatMessages = messages;
+        notifyListeners();
+      },
+      onError: (error) {
+        debugPrint('Error in messages stream: $error');
+        _errorMessage = 'Failed to load messages';
+        notifyListeners();
+      },
+    );
+  }
+
+  /// Start listening to chat rooms updates
+  void _startListeningToChatRooms(String userId) {
+    _chatRoomsSubscription?.cancel();
+
+    _chatRoomsSubscription = _chatService.streamUserChatRooms(userId).listen(
+      (chatRooms) {
+        _chatRooms = chatRooms;
+        notifyListeners();
+      },
+      onError: (error) {
+        debugPrint('Error in chat rooms stream: $error');
+        _errorMessage = 'Failed to load chat rooms';
+        notifyListeners();
+      },
+    );
+  }
+
+  /// Get total unread messages count
+  int getTotalUnreadCount(String userId) {
+    return _chatRooms.fold<int>(0, (total, room) {
+      return total + (room.unreadCount[userId] ?? 0);
+    });
+  }
+
+  /// Get chat room by friend ID
+  ChatRoom? getChatRoomByFriendId(String currentUserId, String friendId) {
+    try {
+      return _chatRooms.firstWhere((room) =>
+          room.type == 'private' &&
+          room.participantIds.contains(currentUserId) &&
+          room.participantIds.contains(friendId));
+    } catch (e) {
+      return null;
+    }
   }
 }

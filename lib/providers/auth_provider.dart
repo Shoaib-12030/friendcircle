@@ -6,11 +6,14 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
 import '../services/database_service.dart';
+import '../services/nickname_validation_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final firebase_auth.FirebaseAuth _auth = firebase_auth.FirebaseAuth.instance;
 
   final DatabaseService _dbService = DatabaseService();
+  final NicknameValidationService _nicknameService =
+      NicknameValidationService();
 
   User? _currentUser;
   bool _isLoading = false;
@@ -202,6 +205,52 @@ class AuthProvider extends ChangeNotifier {
       }
       debugPrint('Mobile number is available');
 
+      // Validate and check nickname availability
+      debugPrint('Validating nickname...');
+      if (nickname == null || nickname.trim().isEmpty) {
+        debugPrint('Nickname is required, deleting auth user...');
+        await credential.user!.delete();
+        _errorMessage = 'Nickname is required for registration';
+        return false;
+      }
+
+      // Validate nickname format
+      final formatValidation =
+          _nicknameService.validateNicknameFormat(nickname);
+      if (!formatValidation['isValid']) {
+        debugPrint('Invalid nickname format, deleting auth user...');
+        await credential.user!.delete();
+        _errorMessage = formatValidation['error'];
+        return false;
+      }
+
+      // Check if nickname is available (with enhanced error handling)
+      debugPrint('Checking if nickname is available...');
+      try {
+        // Direct Firestore check with proper error handling
+        final nicknameQuery = await FirebaseFirestore.instance
+            .collection('users')
+            .where('nickname', isEqualTo: nickname.toLowerCase())
+            .limit(1)
+            .get();
+
+        if (nicknameQuery.docs.isNotEmpty) {
+          debugPrint('Nickname already taken, deleting auth user...');
+          await credential.user!.delete();
+          _errorMessage =
+              'Nickname "$nickname" is already taken. Please choose a different one.';
+          return false;
+        }
+        debugPrint('Nickname is available');
+      } catch (nicknameCheckError) {
+        debugPrint(
+            'Error checking nickname availability during registration: $nicknameCheckError');
+        // If we can't check nickname availability, we'll proceed but log the issue
+        // The nickname validation will happen when we try to create the user document
+        debugPrint(
+            'Proceeding with registration - will validate nickname on document creation');
+      }
+
       // Send email verification
       debugPrint('Sending email verification...');
       await credential.user!.sendEmailVerification();
@@ -214,7 +263,7 @@ class AuthProvider extends ChangeNotifier {
         firebaseUid: credential.user!.uid, // Store Firebase UID separately
         email: email,
         name: name,
-        nickname: nickname ?? name.split(' ').first,
+        nickname: nickname, // User model will handle lowercase storage
         phoneNumber: cleanMobile,
         dateOfBirth: dateOfBirth,
         gender: gender,
@@ -233,11 +282,26 @@ class AuthProvider extends ChangeNotifier {
           'User map has null values: ${userMap.values.where((v) => v == null).length} null values');
 
       debugPrint('Saving to Firestore...');
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(cleanMobile)
-          .set(userMap);
-      debugPrint('User saved to Firestore successfully');
+      try {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(cleanMobile)
+            .set(userMap);
+        debugPrint('User saved to Firestore successfully');
+      } catch (firestoreError) {
+        debugPrint('Error saving user to Firestore: $firestoreError');
+        // If there's an error saving to Firestore, clean up the Firebase Auth user
+        await credential.user!.delete();
+
+        if (firestoreError.toString().contains('already exists') ||
+            firestoreError.toString().contains('nickname')) {
+          _errorMessage =
+              'This nickname is already taken. Please choose a different one.';
+        } else {
+          _errorMessage = 'Failed to create user account. Please try again.';
+        }
+        return false;
+      }
 
       _currentUser = user;
       return true;
@@ -398,6 +462,55 @@ class AuthProvider extends ChangeNotifier {
         return 'Password reset limit exceeded. Please try again later.';
       default:
         return 'An error occurred. Please try again.';
+    }
+  }
+
+  /// Check if a nickname is available for registration
+  Future<bool> checkNicknameAvailability(String nickname) async {
+    try {
+      return await _nicknameService.isNicknameAvailable(nickname);
+    } catch (e) {
+      debugPrint('Error checking nickname availability: $e');
+      return false;
+    }
+  }
+
+  /// Validate nickname format and return validation result
+  Map<String, dynamic> validateNicknameFormat(String nickname) {
+    return _nicknameService.validateNicknameFormat(nickname);
+  }
+
+  /// Generate professional nickname suggestions
+  Future<List<String>> generateNicknameSuggestions(String baseNickname,
+      {String? fullName}) async {
+    try {
+      return await _nicknameService.generateNicknameSuggestions(baseNickname,
+          fullName: fullName);
+    } catch (e) {
+      debugPrint('Error generating nickname suggestions: $e');
+      return [];
+    }
+  }
+
+  /// Get instant nickname suggestions as user types
+  Future<List<String>> getInstantNicknameSuggestions(String partialNickname,
+      {String? fullName}) async {
+    try {
+      return await _nicknameService.getInstantSuggestions(partialNickname,
+          fullName: fullName);
+    } catch (e) {
+      debugPrint('Error getting instant suggestions: $e');
+      return [];
+    }
+  }
+
+  /// Find similar existing nicknames to warn user
+  Future<List<String>> findSimilarNicknames(String nickname) async {
+    try {
+      return await _nicknameService.findSimilarNicknames(nickname);
+    } catch (e) {
+      debugPrint('Error finding similar nicknames: $e');
+      return [];
     }
   }
 }

@@ -65,7 +65,8 @@ class User {
       'firebaseUid': firebaseUid,
       'email': email,
       'name': name,
-      'nickname': nickname,
+      'nickname': nickname
+          .toLowerCase(), // Always store in lowercase for consistent searching
       'photoUrl': photoUrl,
       'status': status,
       'phoneNumber': phoneNumber,

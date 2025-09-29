@@ -44,6 +44,25 @@ dependencies:
   # Networking
   socket_io_client: ^2.0.3+1
 
+  # Encryption & Security
+  crypto: ^3.0.3
+  encrypt: ^5.0.1
+  uuid: ^4.0.0
+
+  # Audio Recording & Playback
+  record: ^5.0.4
+  audioplayers: ^6.0.0
+
+  # Location Services
+  geolocator: ^12.0.0
+
+  # WebRTC for Video/Voice Calls
+  flutter_webrtc: ^0.11.7
+
+  # Local Storage for encrypted data
+  sqflite: ^2.3.0
+  path_provider: ^2.1.1
+
   # Firebase - UPDATED VERSIONS for Flutter 3.35.1 compatibility
   firebase_core: ^3.6.0
   firebase_auth: ^5.3.1
