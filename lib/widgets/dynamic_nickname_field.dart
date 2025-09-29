@@ -31,6 +31,7 @@ class _DynamicNicknameFieldState extends State<DynamicNicknameField> {
   List<String> _similarNicknames = [];
   bool _showSuggestions = false;
   String _lastCheckedNickname = '';
+  bool _userIsTyping = false;
 
   @override
   void initState() {
@@ -47,6 +48,12 @@ class _DynamicNicknameFieldState extends State<DynamicNicknameField> {
 
   void _onNicknameChanged() {
     final nickname = widget.controller.text.trim();
+    debugPrint('Nickname changed: "$nickname"');
+
+    // Set typing state
+    setState(() {
+      _userIsTyping = true;
+    });
 
     // Cancel previous timer
     _debounceTimer?.cancel();
@@ -62,6 +69,8 @@ class _DynamicNicknameFieldState extends State<DynamicNicknameField> {
     final formatValidation = Provider.of<AuthProvider>(context, listen: false)
         .validateNicknameFormat(nickname);
 
+    debugPrint('Format validation result: ${formatValidation['isValid']}, error: ${formatValidation['error']}');
+
     setState(() {
       _validationError = formatValidation['error'];
       _isNicknameAvailable = formatValidation['isValid'];
@@ -72,18 +81,31 @@ class _DynamicNicknameFieldState extends State<DynamicNicknameField> {
         ?.call(formatValidation['isValid'] && _isNicknameAvailable);
 
     if (nickname.isEmpty || !formatValidation['isValid']) {
+      debugPrint('Nickname empty or invalid format, skipping availability check');
+      setState(() {
+        _userIsTyping = false;
+      });
       return;
     }
 
-    // Debounce API calls
-    _debounceTimer = Timer(const Duration(milliseconds: 800), () {
+    // Debounce API calls for better performance
+    debugPrint('Setting up debounced availability check...');
+    _debounceTimer = Timer(const Duration(milliseconds: 600), () {
+      setState(() {
+        _userIsTyping = false;
+      });
+      debugPrint('Starting nickname availability check for: $nickname');
       _checkNicknameAvailability(nickname);
     });
   }
 
   Future<void> _checkNicknameAvailability(String nickname) async {
-    if (nickname == _lastCheckedNickname) return;
+    if (nickname == _lastCheckedNickname) {
+      debugPrint('Skipping duplicate check for: $nickname');
+      return;
+    }
 
+    debugPrint('Checking availability for nickname: $nickname');
     setState(() {
       _isCheckingAvailability = true;
       _lastCheckedNickname = nickname;
@@ -93,8 +115,11 @@ class _DynamicNicknameFieldState extends State<DynamicNicknameField> {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
       // Check availability
+      debugPrint('Calling authProvider.checkNicknameAvailability...');
       final isAvailable =
           await authProvider.checkNicknameAvailability(nickname);
+
+      debugPrint('Availability result for $nickname: $isAvailable');
 
       if (mounted) {
         setState(() {
@@ -106,23 +131,27 @@ class _DynamicNicknameFieldState extends State<DynamicNicknameField> {
         // Notify parent about validation state
         final isValid = isAvailable && _validationError == null;
         widget.onValidationChanged?.call(isValid);
+        debugPrint('Validation state updated: isValid=$isValid');
 
         // If not available, get suggestions and similar nicknames
         if (!isAvailable) {
+          debugPrint('Nickname taken, getting suggestions...');
           _getSuggestionsAndSimilar(nickname);
         }
       }
     } catch (e) {
+      debugPrint('Error checking nickname availability: $e');
       if (mounted) {
         setState(() {
           // For permission errors during registration, we'll be more lenient
           if (e.toString().contains('permission-denied')) {
             _validationError = null; // Don't show error for permission issues
-            _isNicknameAvailable =
-                true; // Assume available, validate server-side
+            _isNicknameAvailable = true; // Assume available, validate server-side
+            debugPrint('Permission denied - will validate during registration');
           } else {
-            _validationError = 'Unable to check nickname availability';
+            _validationError = 'Unable to check availability right now';
             _isNicknameAvailable = false;
+            debugPrint('Network or other error: $e');
           }
         });
         widget.onValidationChanged?.call(_isNicknameAvailable);
@@ -132,6 +161,7 @@ class _DynamicNicknameFieldState extends State<DynamicNicknameField> {
         setState(() {
           _isCheckingAvailability = false;
         });
+        debugPrint('Availability check completed for: $nickname');
       }
     }
   }
@@ -273,7 +303,11 @@ class _DynamicNicknameFieldState extends State<DynamicNicknameField> {
     Color statusColor;
     IconData statusIcon;
 
-    if (_isCheckingAvailability) {
+    if (_userIsTyping) {
+      statusText = 'Typing...';
+      statusColor = Colors.grey;
+      statusIcon = Icons.edit;
+    } else if (_isCheckingAvailability) {
       statusText = 'Checking availability...';
       statusColor = Colors.orange;
       statusIcon = Icons.hourglass_empty;
@@ -282,19 +316,18 @@ class _DynamicNicknameFieldState extends State<DynamicNicknameField> {
       statusColor = Colors.red;
       statusIcon = Icons.error;
     } else if (_isNicknameAvailable) {
-      // Check if we couldn't verify due to permissions
-      if (_lastCheckedNickname.isNotEmpty &&
-          widget.controller.text.trim() == _lastCheckedNickname) {
-        statusText = '✓ Format valid - will verify during registration';
-        statusColor = Colors.blue;
-        statusIcon = Icons.info;
-      } else {
+      // Check if we actually verified or just assumed due to permissions
+      if (_validationError == null && _lastCheckedNickname.isNotEmpty) {
         statusText = '✓ Nickname is available!';
         statusColor = Colors.green;
         statusIcon = Icons.check_circle;
+      } else {
+        statusText = '✓ Format valid - will verify during registration';
+        statusColor = Colors.blue;
+        statusIcon = Icons.info;
       }
     } else {
-      statusText = 'Nickname is already taken';
+      statusText = '❌ Nickname is already taken';
       statusColor = Colors.red;
       statusIcon = Icons.error;
     }
@@ -303,12 +336,14 @@ class _DynamicNicknameFieldState extends State<DynamicNicknameField> {
       children: [
         Icon(statusIcon, size: 16, color: statusColor),
         const SizedBox(width: 4),
-        Text(
-          statusText,
-          style: TextStyle(
-            fontSize: 12,
-            color: statusColor,
-            fontWeight: FontWeight.w500,
+        Expanded(
+          child: Text(
+            statusText,
+            style: TextStyle(
+              fontSize: 12,
+              color: statusColor,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
       ],

@@ -11,16 +11,24 @@ class NicknameValidationService {
   Future<bool> isNicknameAvailable(String nickname) async {
     try {
       final normalizedNickname = _normalizeNickname(nickname);
+      debugPrint('Checking availability for normalized nickname: $normalizedNickname');
 
-      if (normalizedNickname.isEmpty) return false;
+      if (normalizedNickname.isEmpty) {
+        debugPrint('Normalized nickname is empty, returning false');
+        return false;
+      }
 
+      debugPrint('Executing Firestore query for nickname: $normalizedNickname');
       final query = await _firestore
           .collection('users')
           .where('nickname', isEqualTo: normalizedNickname)
           .limit(1)
           .get();
 
-      return query.docs.isEmpty;
+      final isAvailable = query.docs.isEmpty;
+      debugPrint('Query result: ${query.docs.length} docs found, available: $isAvailable');
+      
+      return isAvailable;
     } on FirebaseException catch (e) {
       debugPrint(
           'Firebase error checking nickname availability: ${e.code} - ${e.message}');
